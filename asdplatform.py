@@ -1,5 +1,59 @@
 from streamlit_option_menu import option_menu
 import streamlit as st
+from PIL import Image
+import numpy as np
+import cv2
+import os
+from tensorflow import keras
+
+# Function to load the pre-trained model
+def load_model(model_path):
+    model = keras.models.load_model(model_path)
+    return model
+
+# Function to preprocess the uploaded image
+def preprocess_image(image):
+    image = cv2.convertScaleAbs(image)
+    rgb_image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+    resized_image = cv2.resize(rgb_image, (128, 128))
+    normalized_image = resized_image / 255.0
+    preprocessed_image = np.expand_dims(normalized_image, axis=0)
+    st.image(preprocessed_image, caption="Normalized and Preprocessed Image", use_column_width=True)
+    
+    return preprocessed_image
+
+# Function to make predictions
+def make_prediction(model, image):
+    prediction = model.predict(image)
+    predicted_class = np.argmax(prediction)
+    return predicted_class
+
+# Main function to run the prediction app
+def prediction_page():
+    st.markdown(
+    """
+    <h2 style="color:#FF204E">Prediction Page</h2>
+    """,
+    unsafe_allow_html=True)
+
+    # File uploader to upload the image
+    uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+    
+    if uploaded_file is not None:
+        image = Image.open(uploaded_file)
+        original_image = np.array(image)
+        st.image(original_image, caption="Uploaded Image", use_column_width=True)
+        preprocessed_image = preprocess_image(original_image)
+
+        model_path = os.path.join("model", "VGGNet.keras")
+        model = load_model(model_path)
+
+        predicted_class = make_prediction(model, preprocessed_image)
+
+        if predicted_class == 0:
+            st.write("Prediction: The person has Autism Spectrum Disorder")
+        else:
+            st.write("Prediction: The person is Typcally Developing")
 
 
 st.set_page_config(
@@ -90,7 +144,7 @@ if selected == "Testing":
 
     st.markdown(
     f"""
-    <h2 style="color:#176397">Testing Page</h2>
+    <h2 style="color:#FF204E">Testing Page</h2>
 
 
     """,
@@ -99,15 +153,7 @@ if selected == "Testing":
 
 if selected == "Prediction":
 
-    st.markdown(
-    f"""
-    <h2 style="color:#176397">Prediction Page</h2>
+    prediction_page()
 
-
-    """,
-    unsafe_allow_html=True)
-
-
-    st.write("---")
 
     
